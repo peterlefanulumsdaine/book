@@ -89,7 +89,16 @@ Files:
   classification for alt text and never resumes. The .cfg redefines IMG without the pause.
 - **Diagrams invisible.** tex4ht wraps in-math images in `<semantics><annotation-xml>`,
   and MathML Core renders only the first child of `<semantics>`. The .cfg emits
-  `<mtext><img/></mtext>` instead. This works in Chrome; Apple Books (WebKit) is not yet verified.
+  `<mtext><img/></mtext>` instead (works in Chrome and Apple Books).
+- **Diagram labels misplaced** (`f(x)^{f(p)}` instead of a label on the arrow). In the
+  document tex4ht gives `^`/`_` catcode 12 + mathcode "8000; xy-pic needs catcode 7/8.
+  The .cfg re-tokenises every `\xymatrix` via `\scantokens` with normal catcodes.
+  (`\let` on the characters can't work, and bodies inside align* are already tokenised.)
+- **Diagrams in dark mode.** Apple Books ignored both `prefers-color-scheme` and the
+  `__ibooks_internal_theme` attribute, which showed up as black-on-white boxes.
+  `postprocess.py` inlines every diagram SVG, drawing black as `currentColor`, removes
+  dvisvgm's white page-background rect (from main.tex's `\pagecolor{white}`; `\nopagecolor`
+  breaks dvisvgm), prefixes glyph ids per file, and declares `properties="svg"` in the OPF.
 - **Empty `\mathopen{}`/`\mathclose{}`** (spacing idiom in `\trunc`, `\pairr`, ...)
   become empty `<mo>` that swallow following elements, so the .cfg drops the empty ones.
   `\tproj` is overridden so it doesn't emit an empty `^{}` (double superscript with `\cd{A}^{..}`).
@@ -118,5 +127,5 @@ Files:
 - Known visual issues: Table 8.1's coloured cells are fixed-width boxes and don't line up
   as in the PDF. Subscripts on `\right` delimiters (e.g. ‖A‖₀ via `\trunc`) render inline,
   not as subscripts.
-- Not yet verified on a real device (Apple Books), including Apple Books' night-theme
-  selectors (`__ibooks_internal_theme`).
+- Apple Books (macOS) shows text and math correctly. The inlined-SVG dark-mode fix is not yet
+  confirmed on a device.
