@@ -610,3 +610,22 @@ hott-arxiv.tar.gz
 /xyv2.tex
 /xyweb.tex
 /xyxdvi.tex
+
+# EPUB build (build-epub.sh) outputs
+content.opf
+hott-epub-epub3/
+hott-epub-macros.tex
+hott-epub.4ct
+hott-epub.4tc
+hott-epub.css
+hott-epub.epub
+hott-epub.idv
+hott-epub.idx
+hott-epub.ilg
+hott-epub.ind
+hott-epub.lg
+hott-epub.ncx
+hott-epub.tmp
+hott-epub*.xhtml
+hott-epub*.svg
+hott-epub.xref

@@ -1,0 +1,7 @@
+% makeindex style for the EPUB build. \IDXP marks where the page list starts,
+% so hott-epub.mk4 can split terms (which may contain digits, `^` and commas
+% in math) from locators reliably. \IDXP expands to nothing (hott-epub.cfg).
+delim_0 ", \\IDXP "
+delim_1 ", \\IDXP "
+delim_2 ", \\IDXP "
+line_max 100000

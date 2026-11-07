@@ -1,0 +1,101 @@
+-- make4ht build file for the EPUB3 build. See EPUB_NOTES.md.
+
+-- make4ht's index post-processor splits each .ind line into "term" and
+-- "page numbers" with a regex. This book's terms contain digits, `^` and commas
+-- inside math (`$\Sn^1$`, `$(\infty,1)$`), which then get mistaken for page
+-- numbers and wrapped in links, breaking the TeX run. Instead, hott-epub.ist
+-- makes makeindex emit a `\IDXP ` sentinel before each page list; load a copy
+-- of make4ht-indexing.lua that splits on that, and re-register `makeindex`.
+local path = assert(kpse.find_file("make4ht-indexing", "lua"), "make4ht-indexing.lua not found")
+local src = io.open(path):read("*a")
+local bad = '"(%s*\\\\%a+[^%[^,]+)(.+)$"'
+local good = '"^(.-\\\\IDXP )(.+)$"'
+local s, e = src:find(bad, 1, true)
+assert(s, "make4ht-indexing.lua changed; revisit the index patch")
+src = src:sub(1, s - 1) .. good .. src:sub(e + 1)
+-- Also disable its de-duplication of repeated locators: it deletes `{8.8}`
+-- but leaves a preceding `\defstyle` dangling. tidy_index() below does it.
+local s2, e2 = src:find("if page == previous then", 1, true)
+assert(s2, "make4ht-indexing.lua changed; revisit the index patch")
+src = src:sub(1, s2 - 1) .. "if false then" .. src:sub(e2 + 1)
+local indexing = assert(load(src, "@make4ht-indexing (patched)"))()
+
+-- Split a page list at top-level ", " (not inside braces).
+local function split_list(list)
+  local items, depth, start = {}, 0, 1
+  local i = 1
+  while i <= #list do
+    local c = list:sub(i, i)
+    if c == "{" then depth = depth + 1
+    elseif c == "}" then depth = depth - 1
+    elseif c == "," and depth == 0 then
+      items[#items + 1] = list:sub(start, i - 1)
+      start = i + 1
+    end
+    i = i + 1
+  end
+  items[#items + 1] = list:sub(start)
+  return items
+end
+
+-- Post-process the .ind: drop repeated section locators within one entry,
+-- and label locators from unnumbered chapters (section number 0) "Intro".
+local function tidy_index(indfile)
+  local out = {}
+  for line in io.lines(indfile) do
+    local head, list = line:match("^(.-\\IDXP )(.*)$")
+    if head then
+      local seen, kept = {}, {}
+      for _, item in ipairs(split_list(list)) do
+        item = item:gsub("^%s+", "")
+        item = item:gsub("({})0(\\EndLink)", "%1Intro%2")
+        local loc = item:match("{}([^{}]-)\\EndLink") or item
+        if not seen[loc] then
+          seen[loc] = true
+          kept[#kept + 1] = item
+        end
+      end
+      line = head .. table.concat(kept, ", ")
+    end
+    out[#out + 1] = line
+  end
+  local f = io.open(indfile, "w")
+  f:write(table.concat(out, "\n"), "\n")
+  f:close()
+end
+Make:add("makeindex", function(par)
+  par.options = "-s hott-epub.ist"
+  par.ilgfile = par.input .. ".ilg"
+  local status = indexing.run_indexing_command(
+    "makeindex ${options} -t ${ilgfile} -o ${indfile} ${newidxfile}", par)
+  tidy_index(par.input .. ".ind")
+  return status
+end, {})
+
+Make:add("bibtex", "bibtex ${input}")
+Make:htlatex {}
+Make:bibtex {}
+Make:makeindex {}
+Make:htlatex {}
+Make:htlatex {}
+
+-- make4ht derives element ids from section titles via a Unicode table in
+-- which U+207F (superscript n, in 8.3's title) has shcode=14 instead of 110
+-- ('n'). The resulting 0x0e byte makes the XHTML ill-formed. Fix the table
+-- entry; the section-id filter `require`s the same cached module.
+local ok, chardata = pcall(require, "make4ht-char-def")
+if ok and chardata[0x207F] then chardata[0x207F].shcode = 0x6E end
+
+-- Occasionally (hlevels.tex, Definition 7.4.8: two \vcenter'd diagrams in one
+-- display) tex4ht opens a paragraph inside display math, right before a
+-- diagram image: `<p class="indent"> <mtext><img ...></mtext></math></p>`.
+-- That is ill-formed XML; drop the stray <p> and its </p>.
+local filter = require "make4ht-filter"
+Make:match("xhtml$", filter {
+  function(s)
+    s = s:gsub('<p class="[%w-]*">(%s*<mtext><img.-</math>)</p>', "%1")
+    return s
+  end
+})
+-- Run before tex4ebook's DOM filters, which choke on the ill-formed XML.
+table.insert(Make.matches, 1, table.remove(Make.matches))

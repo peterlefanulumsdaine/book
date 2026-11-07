@@ -1,0 +1,15 @@
+% -*- mode: LaTeX -*-
+% Entry point for the EPUB3 build (tex4ebook). See EPUB_NOTES.md.
+% tex4ht builds MathML structure (<mi>, <mo>, ...) from per-font mapping files,
+% which don't cover mathpazo's math fonts, so all math came out as flat text.
+% Pretend mathpazo is already loaded so math uses Computer Modern; the
+% e-reader chooses the display fonts anyway.
+\expandafter\def\csname ver@mathpazo.sty\endcsname{2099/01/01}
+\input{opt-no-cover}
+\input{opt-no-bastard}
+\input{opt-color}
+\input{opt-letter}
+\def\OPThalftorus{torus-lores-bw}
+\let\OPTfrontimage=\OPTlofrontimage
+\let\OPTbackimage=\OPTlobackimage
+\input{main}
