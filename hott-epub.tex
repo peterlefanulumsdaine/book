@@ -5,6 +5,10 @@
 % Pretend mathpazo is already loaded so math uses Computer Modern; the
 % e-reader chooses the display fonts anyway.
 \expandafter\def\csname ver@mathpazo.sty\endcsname{2099/01/01}
+% tex4ht's colortbl.4ht does `\CT@everycr{...\the\everycr}`. With the new array/
+% colortbl (2026) \CT@everycr *is* \everycr, so that token list contains itself and
+% the first alignment (e.g. \begin{aligned}) overflows TeX's input stack. Clear it.
+\AtBeginDocument{\everycr{}}
 \input{opt-no-cover}
 \input{opt-no-bastard}
 \input{opt-color}

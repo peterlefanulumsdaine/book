@@ -102,6 +102,12 @@ Files:
 - **Empty `\mathopen{}`/`\mathclose{}`** (spacing idiom in `\trunc`, `\pairr`, ...)
   become empty `<mo>` that swallow following elements, so the .cfg drops the empty ones.
   `\tproj` is overridden so it doesn't emit an empty `^{}` (double superscript with `\cd{A}^{..}`).
+- **Input stack overflow at the first `aligned` (TeX Live 2026).** tex4ht's `colortbl.4ht`
+  does `\CT@everycr{...\the\everycr}`. With array >= 2026/02/24, `\CT@everycr` *is*
+  `\everycr` (no separate `\newtoks`), so the token list contains itself and TeX recurses
+  until "input stack size" is exceeded (raising `stack_size` does not help). `hott-epub.tex`
+  clears it with `\AtBeginDocument{\everycr{}}`; harmless on older TeX Live. Skipping
+  colortbl entirely does not work (tex4ht's array support then fails on the first tabular).
 - `<math>` needs `xmlns` in XHTML: `\Configure{math-xmlns}`.
 - `\raisebox` → `\hbox` (calc expression in hlevels.tex; xy-pic needs live catcodes).
 - `\vcenter` must **not** be redefined: tabular/aligned use it internally. A stray
@@ -129,3 +135,14 @@ Files:
   not as subscripts.
 - Apple Books (macOS) shows text and math correctly. The inlined-SVG dark-mode fix is not yet
   confirmed on a device.
+
+## Status (2026-11-23)
+
+- Builds cleanly on TeX Live 2026 after the `\everycr` fix above.
+  Without it the build died with `TeX capacity exceeded [input stack size=10000]`.
+- Compared with an epub built from this branch by mglst: visible text identical (apart from
+  the `Book version:` string, which comes from `git describe` and so depends on local tags).
+  Structural differences are benign: newer tex4ht writes `<mi mathvariant='script'>` where
+  the older wrote `<mstyle mathvariant='script'><mi>`, and some multi-row `aligned` blocks
+  now have extra empty trailing `<mtd columnalign='right'>` cells (e.g. 8.1.6, and the
+  display at homotopy.tex ~l.2071). No visible difference in Apple Books.
