@@ -6,7 +6,7 @@ set -e
 cd "$(dirname "$0")/.."
 export PATH=/Library/TeX/texbin:$PATH
 dir=$(mktemp -d /tmp/hott-raw.XXXX)
-cp hott-epub.dvi hott-epub.tmp hott-epub.xref "$dir"/
+cp build/epub/hott-epub.dvi build/epub/hott-epub.tmp build/epub/hott-epub.xref "$dir"/
 (cd "$dir" && tex4ht -cmozhtf -utf8 hott-epub.dvi >/dev/null 2>&1)
 for f in "$dir"/*.xhtml; do
   xmllint --noout "$f" 2>&1 | head -1

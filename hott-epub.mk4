@@ -73,8 +73,15 @@ Make:add("makeindex", function(par)
 end, {})
 
 Make:add("bibtex", "bibtex ${input}")
+-- Passes: the first pass writes .aux/.idx/.brf but, having no .aux of its own to
+-- read, numbers anchors differently from later passes; so the second pass (with
+-- bibtex between) must produce the .idx that makeindex reads, otherwise the index
+-- locators point at anchor ids that don't exist ("#dxNN-NNNNNN" without a file).
+-- The last two passes resolve cross-file link targets via the .xref. A build
+-- started from stale intermediates in the source directory used to hide this.
 Make:htlatex {}
 Make:bibtex {}
+Make:htlatex {}
 Make:makeindex {}
 Make:htlatex {}
 Make:htlatex {}

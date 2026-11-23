@@ -60,11 +60,12 @@ user installs Homebrew packages from a separate admin account, so ask them to ru
 
 `./build-epub.sh` takes about 70 s and produces `hott-epub.epub`:
 
-1. `make version.tex`; delete the stale `hott-epub.ind`; generate `hott-epub-macros.tex`
-   with `epub/script-macros.py`.
+1. `make version.tex`; recreate an empty `build/epub/` (all TeX/BibTeX/makeindex runs happen
+   there, finding the sources in the repo root via `TEXINPUTS` etc.); generate
+   `build/epub/hott-epub-macros.tex` with `epub/script-macros.py`.
 2. `tex4ebook -f epub3 -c hott-epub.cfg -e hott-epub.mk4 hott-epub.tex mathml`
    (pdfTeX/DVI mode. LuaLaTeX was much worse with this preamble.)
-3. `epub/postprocess.py`: final string fixes on `hott-epub-epub3/`, then re-zip.
+3. `epub/postprocess.py`: final string fixes on `build/epub/hott-epub-epub3/`, then re-zip to `./hott-epub.epub`.
 
 Files:
 - `hott-epub.tex`: entry point (no cover, colour, letter options; mathpazo disabled).
@@ -137,6 +138,12 @@ Files:
   confirmed on a device.
 
 ## Status (2026-11-23)
+
+- Intermediates moved to `build/epub/` (gitignored; `rm -rf build` to clean). A from-scratch
+  build exposed that the old pass sequence only worked because stale files in the source
+  directory were being reused: index locators came out as `#dxNN-NNNNNN` with no file name.
+  The .mk4 now runs htlatex, bibtex, htlatex, makeindex, htlatex, htlatex (see comment there).
+  The resulting epub is identical to the previous one apart from date/version string.
 
 - Builds cleanly on TeX Live 2026 after the `\everycr` fix above.
   Without it the build died with `TeX capacity exceeded [input stack size=10000]`.
